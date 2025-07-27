@@ -32,20 +32,21 @@ Utilità:
 - Attivare campagne di retention automatiche
 
 ```sql
--- CREATE TRAINING DATA
-# time interval: last 12 months + current month
-# training_data: last 12 months excluse current month
-# evaluate_data: current_month
+# NAMELESS ANALYTICS
 
-DECLARE training_start DATE DEFAULT DATE_SUB(DATE_TRUNC(CURRENT_DATE(), MONTH), INTERVAL 12 MONTH);
-DECLARE training_end DATE DEFAULT DATE_TRUNC(CURRENT_DATE(), MONTH);
+# Create training dataset
+DECLARE training_start_date DATE;
+DECLARE training_end_date DATE;
+DECLARE churn_days_from_last_visit INT64;
+DECLARE churn_days_from_last_purchase INT64;
 
-set training_start = '2025-07-01';
-set training_end = '2025-07-23';
+set training_start_date = '2025-01-01'; -- Set start date for training dataset
+set training_end_date = '2025-06-30'; -- Set end date for training dataset
+set churn_days_from_last_visit = 0; -- Set days_from_last_visit churn threshold for training dataset
+set churn_days_from_last_purchase = 1; -- Set days_from_last_purchase churn threshold for training dataset
 
-CREATE OR REPLACE TABLE `tom-moretti.nameless_analytics.ml_users_churn_training_data`
+CREATE OR REPLACE TABLE `tom-moretti.nameless_analytics_ml.training_data_users_churn`
   PARTITION BY user_acquisition_date
-  CLUSTER BY data_type
   AS (
     SELECT
       user_date AS user_acquisition_date,
@@ -53,57 +54,68 @@ CREATE OR REPLACE TABLE `tom-moretti.nameless_analytics.ml_users_churn_training_
       user_id,
       sessions,
       days_from_last_visit,
+      days_from_last_purchase,
       session_duration_sec,
       purchase,
       purchase_revenue,
       refund,
       refund_revenue,
-      CAST(FLOOR(RAND() * 2) AS INT64) AS is_churned, -- Only for testing
       CASE
-        WHEN user_date >= training_start AND user_date < training_end THEN "training_data"
-        WHEN user_date >= training_end AND user_date <= CURRENT_DATE() THEN "evaluate_data"
-        ELSE NULL
-      END AS data_type
-    FROM `tom-moretti.nameless_analytics.users`(training_start, CURRENT_DATE())
+        when days_from_last_visit >= churn_days_from_last_visit and days_from_last_purchase >= churn_days_from_last_purchase then 'Yes'
+        else 'No'
+      END is_churned
+    FROM `tom-moretti.nameless_analytics.users`(training_start_date, training_end_date)
+    -- WHERE is_customer = 'Customer'
   );
 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- CREATE MODEL
-CREATE OR REPLACE MODEL `tom-moretti.nameless_analytics.ml_users_churn_model` OPTIONS(
-  model_type = 'LOGISTIC_REG',
-  -- model_type = 'BOOSTED_TREE_CLASSIFIER',
-  input_label_cols = ['is_churned']
+# Create model
+CREATE OR REPLACE MODEL `tom-moretti.nameless_analytics_ml.ml_model_users_churn` OPTIONS(
+  model_type = 'LOGISTIC_REG', -- LOGISTIC_REG or BOOSTED_TREE_CLASSIFIER,
+  input_label_cols = ['is_churned'],
+  auto_class_weights = TRUE
 ) AS (
   SELECT
-    * EXCEPT(data_type)
-  FROM `tom-moretti.nameless_analytics.ml_users_churn_training_data`
-  WHERE data_type = 'training_data'
+    *
+  FROM `tom-moretti.nameless_analytics_ml.training_data_users_churn`
 );
 
 
--- EVALUATE
+# Evaluate model
 SELECT
   *
 FROM ML.EVALUATE(
-  MODEL `tom-moretti.nameless_analytics.ml_users_churn_model`, (
+  MODEL `tom-moretti.nameless_analytics_ml.ml_model_users_churn`, (
     SELECT
-      * EXCEPT(data_type)
-    FROM `tom-moretti.nameless_analytics.ml_users_churn_training_data`
-    WHERE data_type = 'evaluate_data'
+      *
+    FROM `tom-moretti.nameless_analytics_ml.training_data_users_churn`
   )
 );
 
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- PREDICT
-SELECT
-  * EXCEPT (predicted_is_churned_probs, predicted_is_churned),
-  predicted_is_churned
-FROM ML.PREDICT(
-  MODEL `tom-moretti.nameless_analytics.ml_users_churn_model`, (
-    SELECT
-      * EXCEPT(data_type)
-    FROM `tom-moretti.nameless_analytics.ml_users_churn_training_data`
-    WHERE data_type = 'evaluate_data'
+# Predict
+create or replace table function `tom-moretti.nameless_analytics_ml.users_churn` (start_date DATE, end_date DATE) as (
+  SELECT
+    * EXCEPT (predicted_is_churned_probs, predicted_is_churned),
+    predicted_is_churned as is_churned
+  FROM ML.PREDICT(
+    MODEL `tom-moretti.nameless_analytics_ml.ml_model_users_churn`, (
+      SELECT
+        user_date AS user_acquisition_date,
+        client_id, 
+        user_id,
+        sessions,
+        days_from_last_visit,
+        days_from_last_purchase,
+        session_duration_sec,
+        purchase,
+        purchase_revenue,
+        refund,
+        refund_revenue,
+      FROM `tom-moretti.nameless_analytics.users`(start_date, end_date)
+    )
   )
 );
 ```
