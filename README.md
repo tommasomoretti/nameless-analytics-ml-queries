@@ -18,6 +18,7 @@ Table of contents:
 # Lorem ipsum
 ## Previsione del churn (abbandono cliente)
 Modello: LOGISTIC_REG o BOOSTED_TREE_CLASSIFIER
+
 Cosa fa: Predice la probabilità che un cliente abbandoni il servizio o smetta di acquistare.
 
 Input tipici:
@@ -123,6 +124,7 @@ create or replace table function `tom-moretti.nameless_analytics_ml.users_churn`
 
 ## Segmentazione clienti
 Modello: KMEANS
+
 Cosa fa: Raggruppa i clienti in cluster basati su caratteristiche simili.
 
 Input tipici:
@@ -135,9 +137,13 @@ Utilità:
 - Personalizzazione di campagne
 - Creazione di buyer personas
 
+```sql
+```
+
 
 ## Previsione delle vendite / forecasting
 Modello: ARIMA_PLUS o ML.FORECAST
+
 Cosa fa: Prevede il valore futuro di una metrica (es. vendite, revenue, iscrizioni) su base temporale.
 
 Input tipici:
@@ -149,9 +155,13 @@ Utilità:
 - Ottimizzare scorte, promozioni, marketing budget
 - Pianificazione data-driven
 
+```sql
+```
+
 
 ## Ottimizzazione delle campagne pubblicitarie
 Modello: LINEAR_REG, BOOSTED_TREE_REGRESSOR
+
 Cosa fa: Prevede il ritorno di una campagna, es. conversioni o ROI.
 
 Input tipici:
@@ -164,9 +174,13 @@ Utilità:
 - Trovare il canale più performante
 - Prevedere il ritorno su una campagna prima di lanciarla
 
+```sql
+```
+
 
 ## Raccomandazioni prodotto
 Modello: Custom (via MATRIX_FACTORIZATION o esportando embedding)
+
 Cosa fa: Suggerisce prodotti basati su comportamento passato (tipo Netflix/Amazon).
 
 Input tipici:
@@ -178,9 +192,13 @@ Utilità:
 - Aumentare AOV (average order value)
 - Personalizzazione esperienze
 
+```sql
+```
+
 
 ## Predizione della probabilità di conversione
 Modello: LOGISTIC_REG, BOOSTED_TREE_CLASSIFIER
+
 Cosa fa: Stima la probabilità che un utente compia una conversione (es. acquisto, iscrizione).
 
 Input tipici:
@@ -193,9 +211,13 @@ Utilità:
 - Ottimizzazione funnel
 - Retargeting personalizzato
 
+```sql
+```
+
 
 ## Analisi di sentiment su recensioni o feedback
 Modello: via REMOTE_MODEL o AutoML (testo)
+
 Cosa fa: Analizza testi (recensioni, email, commenti) per determinare sentiment positivo/negativo/neutro.
 
 Input tipici:
@@ -207,18 +229,26 @@ Utilità:
 - Comprendere come i clienti percepiscono il brand
 - Intervenire in caso di feedback negativo
 
+```sql
+```
+
 
 ## Test A/B e inferenze causali
 Modello: ML.TRIAL_RESULT (usato con ML.HYPERPARAMETERS)
+
 Cosa fa: Aiuta a capire quale variante funziona meglio tra due o più opzioni (es. email A vs B).
 
 Utilità:
 - Ottimizzare messaggi, landing page
 - Automatizzare test su ampie basi utenti
 
+```sql
+```
+
 
 ## Lookalike modeling
 Modello: LOGISTIC_REG, BOOSTED_TREE_CLASSIFIER
+
 Cosa fa: Trova nuovi utenti simili a un gruppo che ha già convertito (o che ha un comportamento desiderato).
 
 Input tipici:
@@ -228,6 +258,9 @@ Input tipici:
 
 Utilità:
 - Espansione audience per pubblicità mirata
+
+```sql
+```
 
 ---
 
